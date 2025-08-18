@@ -2,7 +2,6 @@
 
 #include <wx/string.h>
 #include <memory>
-#include <map>
 #include <windows.h>
 
 struct SerialConfig {

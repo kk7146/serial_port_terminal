@@ -15,6 +15,7 @@ private:
     // Event handlers
     void OnClose(wxCloseEvent&);
     void OnConnectToggle(wxCommandEvent&);
+    void OnRefresh(wxCommandEvent&);
     void OnSend(wxCommandEvent&);
     void OnTimer(wxTimerEvent&);
     void OnModeChar(wxCommandEvent&);
@@ -33,6 +34,7 @@ private:
     wxButton* btnSend_{ nullptr };
     wxButton* btnClearTx_{ nullptr };
     wxButton* btnConnect_{ nullptr };
+    wxButton* btnRefresh_{ nullptr };
     wxButton* btnClearRx_{ nullptr };
     wxComboBox* cbParity_{ nullptr };
     wxComboBox* cbStopbit_{ nullptr };

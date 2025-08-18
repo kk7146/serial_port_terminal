@@ -1,5 +1,98 @@
 #include "main_frame.h"
 #include <wx/msgdlg.h>
+#include <map>
+#include <vector>
+
+static const std::map<wxString, BYTE> parityMap = {
+        { "none",  0 },
+        { "odd",   1 },
+        { "even",  2 },
+        { "mark",  3 },
+        { "space", 4 }
+};
+
+// Uncomment the following code if you want to use SetupAPI for enumerating serial ports.
+
+// #ifndef GUID_DEVINTERFACE_COMPORT
+// DEFINE_GUID(GUID_DEVINTERFACE_COMPORT,
+//     0x86E0D1E0L, 0x8089, 0x11D0, 0x9C, 0xE4, 0x08, 0x00, 0x3E, 0x30, 0x1F, 0x73);
+// #endif
+// 
+// std::vector<wxString> EnumerateSerialPorts_SetupAPI() {
+//     std::vector<wxString> ports;
+// 
+//     HDEVINFO hDevInfo = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_COMPORT,
+//         nullptr, nullptr,
+//         DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
+//     if (hDevInfo == INVALID_HANDLE_VALUE) return ports;
+// 
+//     SP_DEVICE_INTERFACE_DATA ifData{};
+//     ifData.cbSize = sizeof(ifData);
+// 
+//     for (DWORD i = 0; SetupDiEnumDeviceInterfaces(hDevInfo, nullptr,
+//         &GUID_DEVINTERFACE_COMPORT, i, &ifData); ++i) {
+//         DWORD required = 0;
+//         SetupDiGetDeviceInterfaceDetailW(hDevInfo, &ifData, nullptr, 0, &required, nullptr);
+//         if (required == 0) continue;
+// 
+//         std::vector<BYTE> buffer(required);
+//         auto* detail = reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W*>(buffer.data());
+//         detail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W);
+// 
+//         SP_DEVINFO_DATA devInfo{};
+//         devInfo.cbSize = sizeof(devInfo);
+// 
+//         if (!SetupDiGetDeviceInterfaceDetailW(hDevInfo, &ifData, detail, required, nullptr, &devInfo))
+//             continue;
+// 
+//         WCHAR friendly[256];
+//         if (SetupDiGetDeviceRegistryPropertyW(hDevInfo, &devInfo, SPDRP_FRIENDLYNAME,
+//             nullptr, reinterpret_cast<PBYTE>(friendly),
+//             sizeof(friendly), nullptr)) {
+// 
+//             wxString fn = friendly;
+//             int l = fn.Find('('), r = fn.Find(')');
+//             if (l != wxNOT_FOUND && r != wxNOT_FOUND && r > l) {
+//                 wxString com = fn.Mid(l + 1, r - l - 1);
+//                 ports.push_back(com);
+//                 continue;
+//             }
+//         }
+//     }
+// 
+//     SetupDiDestroyDeviceInfoList(hDevInfo);
+//     return ports;
+// }
+
+
+std::vector<wxString> EnumerateSerialPorts_Registry() {
+    std::vector<wxString> ports;
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+        L"HARDWARE\\DEVICEMAP\\SERIALCOMM",
+        0, KEY_READ, &hKey) != ERROR_SUCCESS) {
+        return ports;
+    }
+
+    DWORD index = 0;
+    WCHAR valueName[256];
+    BYTE  data[256];
+    DWORD valueLen, dataLen, type;
+
+    while (true) {
+        valueLen = static_cast<DWORD>(std::size(valueName));
+        dataLen = static_cast<DWORD>(std::size(data));
+        LONG ret = RegEnumValueW(hKey, index++, valueName, &valueLen,
+            nullptr, &type, data, &dataLen);
+        if (ret == ERROR_NO_MORE_ITEMS) break;
+        if (ret == ERROR_SUCCESS && type == REG_SZ) {
+            ports.emplace_back(reinterpret_cast<wchar_t*>(data));
+        }
+    }
+
+    RegCloseKey(hKey);
+    return ports;
+}
 
 mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     : wxFrame(parent, id, "Serial Terminal", wxDefaultPosition, wxSize(420, 450)) {
@@ -13,10 +106,11 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     new wxStaticBox(panel, wxID_ANY, "Received data", wxPoint(16, 224), wxSize(368, 152));
     new wxStaticBox(panel, wxID_ANY, "Port Setup", wxPoint(264, 16), wxSize(120, 192));
 
-    // Controls
+	// Control buttons
     btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(176, 176), wxSize(72, 23));
     btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(96, 176), wxSize(72, 23));
     btnConnect_ = new wxButton(panel, wxID_ANY, "Connect", wxPoint(280, 176), wxSize(88, 23));
+    btnRefresh_ = new wxButton(panel, wxID_ANY, "Refresh", wxPoint(280, 150), wxSize(88, 23));
     btnClearRx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(160, 244), wxSize(72, 23));
 
 	// Text send receive
@@ -33,20 +127,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     cbListen_->SetValue(true);
 
     // Port
-    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(272, 37), wxSize(104, 133));
-    lstPorts_->Append("COM1");
-    lstPorts_->Append("COM2");
-    lstPorts_->Append("COM3");
-    lstPorts_->Append("COM4");
-    lstPorts_->Append("COM5");
-	lstPorts_->Append("COM6");
-	lstPorts_->Append("COM7");
-	lstPorts_->Append("COM8");
-	lstPorts_->Append("COM9");
-	lstPorts_->Append("COM10");
-	lstPorts_->Append("COM11");
-	lstPorts_->Append("COM12");
-	lstPorts_->Append("COM13");
+    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(272, 37), wxSize(104, 110));
 
     new wxStaticText(panel, wxID_ANY, "Parity Bit", wxPoint(20, 35));
     cbParity_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(20, 55), wxSize(60, 20));
@@ -92,6 +173,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     btnSend_->Bind(wxEVT_BUTTON, &mainFrame::OnSend, this);
     btnClearTx_->Bind(wxEVT_BUTTON, &mainFrame::OnClearTx, this);
     btnConnect_->Bind(wxEVT_BUTTON, &mainFrame::OnConnectToggle, this);
+    btnRefresh_->Bind(wxEVT_BUTTON, &mainFrame::OnRefresh, this);
     btnClearRx_->Bind(wxEVT_BUTTON, &mainFrame::OnClearRx, this);
     rbChar_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeChar, this);
     rbHex_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeHex, this);
@@ -105,14 +187,6 @@ void mainFrame::OnClose(wxCloseEvent& e) {
     port_.close();
     e.Skip();
 }
-
-static const std::map<wxString, BYTE> parityMap = {
-        { "none",  0 },
-        { "odd",   1 },
-        { "even",  2 },
-        { "mark",  3 },
-        { "space", 4 }
-};
 
 void mainFrame::OnConnectToggle(wxCommandEvent&) {
     if (!port_.isOpen()) {
@@ -176,6 +250,20 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
     }
 }
 
+void mainFrame::OnRefresh(wxCommandEvent&) {
+    lstPorts_->Freeze();
+    lstPorts_->Clear();
+
+    auto ports = EnumerateSerialPorts_Registry();
+    // Uncomment the following code if you want to use SetupAPI for enumerating serial ports.
+    // if (ports.empty()) {
+    //     ports = EnumerateSerialPorts_SetupAPI();
+    // }
+    for (auto& p : ports) lstPorts_->Append(p);
+
+    lstPorts_->Thaw();
+    if (!ports.empty()) lstPorts_->SetSelection(0);
+}
 
 void mainFrame::OnSend(wxCommandEvent&) {
     if (!port_.isOpen()) {
