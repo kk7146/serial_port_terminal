@@ -2,6 +2,17 @@
 
 #include <wx/string.h>
 #include <memory>
+#include <map>
+#include <windows.h>
+
+struct SerialConfig {
+    unsigned long baud = 115200;
+    uint8_t       byteSize = 8;
+    uint8_t       stopBits = 1;
+    uint8_t       parity = 0;
+    bool          dtr = true;
+    bool          rts = true;
+};
 
 class SerialPort {
 public:
@@ -11,22 +22,14 @@ public:
     SerialPort(const SerialPort&) = delete;
     SerialPort& operator=(const SerialPort&) = delete;
 
-    bool open(const wxString& port, unsigned long baud);
+    bool open(const wxString& port, const SerialConfig& cfg);
     void close();
     bool isOpen() const;
-    bool setBaud(const wxString& parity);
-    bool setParity(const wxString& parity);
-    bool setStop(const wxString& parity);
-    bool setByte(const wxString& parity);
 
     bool write(const void* data, unsigned long size, unsigned long* written = nullptr);
     unsigned long read(void* buffer, unsigned long size);
 
 private:
-    struct Impl;                 // pImpl to hide Win32 details
+    struct Impl;
     std::unique_ptr<Impl> d_;
-    unsigned long baud;
-    unsigned long parity;
-	unsigned long stop;
-	unsigned long byte;
 };

@@ -106,6 +106,14 @@ void mainFrame::OnClose(wxCloseEvent& e) {
     e.Skip();
 }
 
+static const std::map<wxString, BYTE> parityMap = {
+        { "none",  0 },
+        { "odd",   1 },
+        { "even",  2 },
+        { "mark",  3 },
+        { "space", 4 }
+};
+
 void mainFrame::OnConnectToggle(wxCommandEvent&) {
     if (!port_.isOpen()) {
         const int sel = lstPorts_->GetSelection();
@@ -113,16 +121,51 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
             wxMessageBox("Select a COM port first.", "Warning", wxICON_WARNING, this);
             return;
         }
-        wxString portName = lstPorts_->GetString(sel);
+        const wxString portName = lstPorts_->GetString(sel);
+
         unsigned long baud = 0;
         if (!cbBaud_->GetValue().ToULong(&baud) || baud < 300 || baud > 460800) {
             wxMessageBox("Enter a valid baud rate (300~460800).", "Warning", wxICON_WARNING, this);
             return;
         }
-        if (!port_.open(portName, baud)) {
-            wxMessageBox(wxString::Format("%s is not available.", portName), "Error", wxICON_ERROR, this);
+
+        unsigned long byteSizeUL = 0;
+        if (!cbBytesize_->GetValue().ToULong(&byteSizeUL) || byteSizeUL < 4 || byteSizeUL > 8) {
+            wxMessageBox("Enter a valid byte size (4~8).", "Warning", wxICON_WARNING, this);
             return;
         }
+
+        const wxString stopStr = cbStopbit_->GetValue();
+        uint8_t stopBitsCfg = 1;
+        if (stopStr == "1")   stopBitsCfg = 1;
+        else if (stopStr == "1.5") stopBitsCfg = 15;
+        else if (stopStr == "2")   stopBitsCfg = 2;
+        else {
+            wxMessageBox("Select valid stop bits (1, 1.5, or 2).", "Warning", wxICON_WARNING, this);
+            return;
+        }
+
+        const wxString parityStr = cbParity_->GetValue();
+        auto it = parityMap.find(parityStr);
+        if (it == parityMap.end()) {
+            wxMessageBox("Select a valid parity (None, Odd, Even, Mark, Space).", "Warning", wxICON_WARNING, this);
+            return;
+        }
+
+        SerialConfig cfg;
+        cfg.baud = baud;
+        cfg.byteSize = static_cast<uint8_t>(byteSizeUL);
+        cfg.stopBits = stopBitsCfg;
+        cfg.parity = it->second;
+        cfg.dtr = true;
+        cfg.rts = true;
+
+        if (!port_.open(portName, cfg)) {
+            wxMessageBox(wxString::Format("Failed to open %s @ %lu.", portName, baud),
+                "Error", wxICON_ERROR, this);
+            return;
+        }
+
         btnConnect_->SetLabel("Disconnect");
         SetStatusText(wxString::Format("Connected: %s @ %lu", portName, baud));
     }
@@ -133,6 +176,7 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
     }
 }
 
+
 void mainFrame::OnSend(wxCommandEvent&) {
     if (!port_.isOpen()) {
         wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
@@ -142,9 +186,8 @@ void mainFrame::OnSend(wxCommandEvent&) {
     if (text.empty()) return;
     const std::string utf8 = std::string(text.ToUTF8());
     unsigned long written = 0;
-    if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written)) {
+    if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
         wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
-    }
 }
 
 void mainFrame::OnTimer(wxTimerEvent&) {
@@ -161,9 +204,8 @@ void mainFrame::OnTimer(wxTimerEvent&) {
     else {
         wxString line;
         line.reserve(r * 5);
-        for (unsigned long i = 0; i < r; ++i) {
+        for (unsigned long i = 0; i < r; ++i)
             line.Append(wxString::Format("0x%02X ", static_cast<unsigned char>(buf[i])));
-        }
         txtRx_->AppendText(line);
     }
 }
