@@ -79,7 +79,7 @@ std::vector<wxString> EnumerateSerialPorts_Registry() {
     BYTE  data[256];
     DWORD valueLen, dataLen, type;
 
-    while (true) {
+    while (1) {
         valueLen = static_cast<DWORD>(std::size(valueName));
         dataLen = static_cast<DWORD>(std::size(data));
         LONG ret = RegEnumValueW(hKey, index++, valueName, &valueLen,
@@ -127,7 +127,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     cbListen_->SetValue(true);
 
     // Port
-    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(272, 37), wxSize(104, 110));
+    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(272, 37), wxSize(104, 105));
 
     new wxStaticText(panel, wxID_ANY, "Parity Bit", wxPoint(20, 35));
     cbParity_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(20, 55), wxSize(60, 20));
