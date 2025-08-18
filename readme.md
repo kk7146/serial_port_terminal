@@ -1,13 +1,16 @@
-# Âü°íÇÑ È¯°æ ¼³Á¤
+# ì–´í”Œë¦¬ì¼€ì´ì…˜ ì‚¬ì§„
+![alt text](image.png)
+
+# ì°¸ê³ í•œ í™˜ê²½ ì„¤ì •
 https://grr1.tistory.com/23
 https://blog.naver.com/jdkim2004/223211503446
-ÀÏºÎ libÆÄÀÏÀº º¯°æ ÇÊ¿ä.
+ì¼ë¶€ libíŒŒì¼ì€ ë³€ê²½ í•„ìš”.
 
-# ½Ã¸®¾ó Æ÷Æ® ÀÚµ¿À¸·Î ÀĞ±â
+# ì‹œë¦¬ì–¼ í¬íŠ¸ ìë™ìœ¼ë¡œ ê°ì§€
 https://blog.naver.com/jangwn119/130040867497
 
-# release ¹öÀü ºôµå
-visual studio x64 native tools command prompt¿¡¼­
+# release ë²„ì „ ë¹Œë“œ
+visual studio x64 native tools command promptì—ì„œ
 ```bash
 cd C:\wxWidgets-3.2.8\build\msw
 nmake /f makefile.vc BUILD=release SHARED=0 MONOLITHIC=0 TARGET_CPU=amd64
