@@ -5,7 +5,7 @@
 #include <windows.h>
 
 struct SerialConfig {
-    unsigned long baud = 115200;
+    unsigned long baud = 9600;
     uint8_t       byteSize = 8;
     uint8_t       stopBits = 1;
     uint8_t       parity = 0;
@@ -24,11 +24,11 @@ public:
     bool open(const wxString& port, const SerialConfig& cfg);
     void close();
     bool isOpen() const;
+    bool changeConfig(const SerialConfig& cfg);
 
     bool write(const void* data, unsigned long size, unsigned long* written = nullptr);
     unsigned long read(void* buffer, unsigned long size);
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> d_;
+    HANDLE d_;
 };

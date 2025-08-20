@@ -107,9 +107,10 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     new wxStaticBox(panel, wxID_ANY, "Port Setup", wxPoint(264, 16), wxSize(120, 192));
 
 	// Control buttons
-    btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(176, 176), wxSize(72, 23));
-    btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(96, 176), wxSize(72, 23));
+    btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(182, 176), wxSize(72, 23));
+    btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(102, 176), wxSize(72, 23));
     btnConnect_ = new wxButton(panel, wxID_ANY, "Connect", wxPoint(280, 176), wxSize(88, 23));
+    btnRepeat_ = new wxButton(panel, wxID_ANY, "Repeat", wxPoint(22, 176), wxSize(72, 23));
     btnRefresh_ = new wxButton(panel, wxID_ANY, "Refresh", wxPoint(280, 150), wxSize(88, 23));
     btnClearRx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(160, 244), wxSize(72, 23));
 
@@ -155,12 +156,16 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
 
     new wxStaticText(panel, wxID_ANY, "Baud Rate", wxPoint(195, 35));
     cbBaud_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(195, 55), wxSize(60, 20));
+    cbBaud_->Append("600");
     cbBaud_->Append("1200");
     cbBaud_->Append("4800");
     cbBaud_->Append("9600");
     cbBaud_->Append("19200");
     cbBaud_->Append("38400");
     cbBaud_->Append("57600");
+    cbBaud_->Append("115200");
+    cbBaud_->Append("128000");
+	cbBaud_->Append("256000");
     cbBaud_->SetValue("9600");
 
     CreateStatusBar(1);
@@ -168,16 +173,22 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     // Timer
     timer_.SetOwner(this);
     timer_.Start(100, wxTIMER_CONTINUOUS);
+    
+    // Repeat Timer
+    repeatTimer_.SetOwner(this);
 
     // Bindings
     btnSend_->Bind(wxEVT_BUTTON, &mainFrame::OnSend, this);
     btnClearTx_->Bind(wxEVT_BUTTON, &mainFrame::OnClearTx, this);
     btnConnect_->Bind(wxEVT_BUTTON, &mainFrame::OnConnectToggle, this);
+    btnRepeat_->Bind(wxEVT_BUTTON, &mainFrame::OnRepeatToggle, this);
     btnRefresh_->Bind(wxEVT_BUTTON, &mainFrame::OnRefresh, this);
     btnClearRx_->Bind(wxEVT_BUTTON, &mainFrame::OnClearRx, this);
     rbChar_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeChar, this);
     rbHex_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeHex, this);
-    Bind(wxEVT_TIMER, &mainFrame::OnTimer, this);
+    Bind(wxEVT_COMBOBOX, &mainFrame::OnChange, this); // When all combo boxes are changed, this event will be called.
+    Bind(wxEVT_TIMER, &mainFrame::OnTimer, this, timer_.GetId());
+    Bind(wxEVT_TIMER, &mainFrame::OnRepeatTimer, this, repeatTimer_.GetId());
     Bind(wxEVT_CLOSE_WINDOW, &mainFrame::OnClose, this);
 
     Centre();
@@ -197,14 +208,14 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
         }
         const wxString portName = lstPorts_->GetString(sel);
 
-        unsigned long baud = 0;
-        if (!cbBaud_->GetValue().ToULong(&baud) || baud < 300 || baud > 460800) {
-            wxMessageBox("Enter a valid baud rate (300~460800).", "Warning", wxICON_WARNING, this);
+        unsigned long baudRate = 0;
+        if (!cbBaud_->GetValue().ToULong(&baudRate) || baudRate < 300 || baudRate > 256000) {
+            wxMessageBox("Enter a valid baud rate (300~256000).", "Warning", wxICON_WARNING, this);
             return;
         }
 
-        unsigned long byteSizeUL = 0;
-        if (!cbBytesize_->GetValue().ToULong(&byteSizeUL) || byteSizeUL < 4 || byteSizeUL > 8) {
+        unsigned long byteSize = 0;
+        if (!cbBytesize_->GetValue().ToULong(&byteSize) || byteSize < 4 || byteSize > 8) {
             wxMessageBox("Enter a valid byte size (4~8).", "Warning", wxICON_WARNING, this);
             return;
         }
@@ -227,26 +238,43 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
         }
 
         SerialConfig cfg;
-        cfg.baud = baud;
-        cfg.byteSize = static_cast<uint8_t>(byteSizeUL);
+        cfg.baud = baudRate;
+        cfg.byteSize = static_cast<uint8_t>(byteSize);
         cfg.stopBits = stopBitsCfg;
         cfg.parity = it->second;
         cfg.dtr = true;
         cfg.rts = true;
 
         if (!port_.open(portName, cfg)) {
-            wxMessageBox(wxString::Format("Failed to open %s @ %lu.", portName, baud),
+            wxMessageBox(wxString::Format("Failed to open %s @ %lu.", portName, baudRate),
                 "Error", wxICON_ERROR, this);
             return;
         }
 
         btnConnect_->SetLabel("Disconnect");
-        SetStatusText(wxString::Format("Connected: %s @ %lu", portName, baud));
+        SetStatusText(wxString::Format("Connected: %s @ %lu", portName, baudRate));
     }
     else {
         port_.close();
         btnConnect_->SetLabel("Connect");
         SetStatusText("");
+    }
+}
+
+void mainFrame::OnRepeatToggle(wxCommandEvent&) {
+    if (!port_.isOpen()) {
+        wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
+        return;
+    }
+    if (!isRepeating_) {
+        btnRepeat_->SetLabel("Stop");
+        repeatTimer_.Start(repeatIntervalMs_);
+        isRepeating_ = true;
+    }
+    else {
+        btnRepeat_->SetLabel("Repeat");
+        repeatTimer_.Stop();
+        isRepeating_ = false;
     }
 }
 
@@ -296,6 +324,66 @@ void mainFrame::OnTimer(wxTimerEvent&) {
             line.Append(wxString::Format("0x%02X ", static_cast<unsigned char>(buf[i])));
         txtRx_->AppendText(line);
     }
+}
+
+void mainFrame::OnRepeatTimer(wxTimerEvent&) {
+	if (!isRepeating_)
+        return;
+    if (!port_.isOpen()) {
+        btnRepeat_->SetLabel("Repeat");
+        isRepeating_ = false;
+        repeatTimer_.Stop();
+        wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
+        return;
+    }
+    const wxString text = txtTx_->GetValue();
+    if (text.empty()) return;
+    const std::string utf8 = std::string(text.ToUTF8());
+    unsigned long written = 0;
+    if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
+        wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
+}
+
+void mainFrame::OnChange(wxCommandEvent&) {
+    if (!port_.isOpen())
+        return;
+    unsigned long baudRate = 0;
+    if (!cbBaud_->GetValue().ToULong(&baudRate) || baudRate < 300 || baudRate > 256000) {
+        wxMessageBox("Enter a valid baud rate (300~256000).", "Warning", wxICON_WARNING, this);
+        return;
+    }
+
+    unsigned long byteSize = 0;
+    if (!cbBytesize_->GetValue().ToULong(&byteSize) || byteSize < 4 || byteSize > 8) {
+        wxMessageBox("Enter a valid byte size (4~8).", "Warning", wxICON_WARNING, this);
+        return;
+    }
+
+    const wxString stopStr = cbStopbit_->GetValue();
+    uint8_t stopBitsCfg = 1;
+    if (stopStr == "1")   stopBitsCfg = 1;
+    else if (stopStr == "1.5") stopBitsCfg = 15;
+    else if (stopStr == "2")   stopBitsCfg = 2;
+    else {
+        wxMessageBox("Select valid stop bits (1, 1.5, or 2).", "Warning", wxICON_WARNING, this);
+        return;
+    }
+
+    const wxString parityStr = cbParity_->GetValue();
+    auto it = parityMap.find(parityStr);
+    if (it == parityMap.end()) {
+        wxMessageBox("Select a valid parity (None, Odd, Even, Mark, Space).", "Warning", wxICON_WARNING, this);
+        return;
+    }
+
+    SerialConfig cfg;
+    cfg.baud = baudRate;
+    cfg.byteSize = static_cast<uint8_t>(byteSize);
+    cfg.stopBits = stopBitsCfg;
+    cfg.parity = it->second;
+    cfg.dtr = true;
+    cfg.rts = true;
+    port_.changeConfig(cfg);
 }
 
 void mainFrame::OnModeChar(wxCommandEvent&) { mode_ = Mode::Char; }

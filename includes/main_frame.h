@@ -11,17 +11,22 @@ public:
 
 private:
     enum class Mode { Char, Hex };
+    bool isRepeating_ = false;
+    int  repeatIntervalMs_ = 900;
 
     // Event handlers
     void OnClose(wxCloseEvent&);
     void OnConnectToggle(wxCommandEvent&);
+    void OnRepeatToggle(wxCommandEvent&);
     void OnRefresh(wxCommandEvent&);
     void OnSend(wxCommandEvent&);
     void OnTimer(wxTimerEvent&);
+    void OnRepeatTimer(wxTimerEvent& e);
     void OnModeChar(wxCommandEvent&);
     void OnModeHex(wxCommandEvent&);
     void OnClearTx(wxCommandEvent&);
     void OnClearRx(wxCommandEvent&);
+    void OnChange(wxCommandEvent&);
 
     // UI widgets
     wxTextCtrl* txtTx_{ nullptr };
@@ -34,6 +39,7 @@ private:
     wxButton* btnSend_{ nullptr };
     wxButton* btnClearTx_{ nullptr };
     wxButton* btnConnect_{ nullptr };
+    wxButton* btnRepeat_{ nullptr };
     wxButton* btnRefresh_{ nullptr };
     wxButton* btnClearRx_{ nullptr };
     wxComboBox* cbParity_{ nullptr };
@@ -41,7 +47,8 @@ private:
     wxComboBox* cbBytesize_{ nullptr };
 
     // Logic
-    SerialPort port_{};
+    SerialPort port_;
     Mode mode_ = Mode::Char;
     wxTimer timer_{};
+    wxTimer repeatTimer_;
 };
