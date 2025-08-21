@@ -145,6 +145,7 @@
     <ClCompile Include="srcs\serial_port.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="config.h" />
     <ClInclude Include="includes\app.h" />
     <ClInclude Include="includes\main_frame.h" />
     <ClInclude Include="includes\serial_port.h" />

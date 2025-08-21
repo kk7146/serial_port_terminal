@@ -1,8 +1,9 @@
-
-#pragma once
+#ifndef MAIN_FRAME_H
+#define MAIN_FRAME_H
 
 #include <wx/wx.h>
 #include <wx/timer.h>
+#include <thread>
 #include "serial_port.h"
 
 class mainFrame : public wxFrame {
@@ -12,7 +13,9 @@ public:
 private:
     enum class Mode { Char, Hex };
     bool isRepeating_ = false;
-    int  repeatIntervalMs_ = 900;
+
+    bool rxRunning_ = false;
+    std::thread rxThread_;
 
     // Event handlers
     void OnClose(wxCloseEvent&);
@@ -20,7 +23,6 @@ private:
     void OnRepeatToggle(wxCommandEvent&);
     void OnRefresh(wxCommandEvent&);
     void OnSend(wxCommandEvent&);
-    void OnTimer(wxTimerEvent&);
     void OnRepeatTimer(wxTimerEvent& e);
     void OnModeChar(wxCommandEvent&);
     void OnModeHex(wxCommandEvent&);
@@ -29,6 +31,8 @@ private:
     void OnChange(wxCommandEvent&);
 
     // UI widgets
+    wxTextCtrl* macroTx_{ nullptr };
+    wxTextCtrl* timingTx_{ nullptr };
     wxTextCtrl* txtTx_{ nullptr };
     wxTextCtrl* txtRx_{ nullptr };
     wxRadioButton* rbChar_{ nullptr };
@@ -51,4 +55,12 @@ private:
     Mode mode_ = Mode::Char;
     wxTimer timer_{};
     wxTimer repeatTimer_;
+
+    std::string rxAccum_;
+    wxStopWatch uiFlushClock_;
+    const int kUiFlushMs = 30; // ~30Hz
 };
+
+wxDECLARE_EVENT(EVT_RX_DATA, wxThreadEvent);
+
+#endif

@@ -8,6 +8,7 @@ https://blog.naver.com/jdkim2004/223211503446
 
 # 시리얼 포트 자동으로 감지
 https://blog.naver.com/jangwn119/130040867497
+https://yogyui.tistory.com/entry/MFCSetupAPI-%EC%9E%A5%EC%B9%98%EA%B4%80%EB%A6%AC%EC%9E%90Device-Manager-%EC%A0%95%EB%B3%B4-%EC%96%BB%EA%B8%B0
 
 # release 버전 빌드
 visual studio x64 native tools command prompt에서

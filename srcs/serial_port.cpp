@@ -5,15 +5,6 @@
 #define NOMINMAX
 #endif
 
-// static wxString WinErrMsg(DWORD e) {
-//     LPWSTR buf = nullptr;
-//     DWORD n = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-//         nullptr, e, 0, (LPWSTR)&buf, 0, nullptr);
-//     wxString s = (n && buf) ? wxString(buf) : wxString::Format("WinErr=%lu", e);
-//     if (buf) LocalFree(buf);
-//     return s.Trim(true).Trim(false);
-// }
-
 static BYTE MapStopBits(uint8_t sb) {
     if (sb == 2)
         return TWOSTOPBITS;
@@ -70,22 +61,22 @@ bool SerialPort::open(const wxString& port, const SerialConfig& cfg) {
     close();
 
     wxString device = wxString::Format("\\\\.\\%s", port);
-    d_ = ::CreateFileW(device.wc_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    d_ = ::CreateFileW(device.wc_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
     if (d_ == INVALID_HANDLE_VALUE) return false;
 
 	if (!changeConfig(cfg))
         return false;
 
     COMMTIMEOUTS to{};
-    to.ReadIntervalTimeout = 50;   // ms
-    to.ReadTotalTimeoutConstant = 50;   // ms
+    to.ReadIntervalTimeout = 100;   // ms
+    to.ReadTotalTimeoutConstant = 100;   // ms
     to.ReadTotalTimeoutMultiplier = 1;   // ms/byte
-    to.WriteTotalTimeoutConstant = 50;   // ms
+    to.WriteTotalTimeoutConstant = 100;   // ms
     to.WriteTotalTimeoutMultiplier = 1;   // ms/byte
     if (!::SetCommTimeouts(d_, &to)) { ::CloseHandle(d_); return false; }
     ::SetupComm(d_, 4096, 4096);
     ::PurgeComm(d_, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
-
+    ::SetCommMask(d_, EV_RXCHAR | EV_ERR);
     return true;
 }
 
@@ -96,21 +87,62 @@ void SerialPort::close() {
     }
 }
 
-bool SerialPort::isOpen() const {
+bool SerialPort::isOpen() {
     return d_ != INVALID_HANDLE_VALUE;
 }
 
 bool SerialPort::write(const void* data, unsigned long size, unsigned long* written) {
-    if (!isOpen()) return false;
-    DWORD w = 0;
-    bool result = ::WriteFile(d_, data, static_cast<DWORD>(size), &w, nullptr);
-    if (written) *written = w;
-    return result == true;
+    if (!isOpen() || data == nullptr || size == 0) {
+        if (written) *written = 0;
+        return false;
+    }
+
+    const char* p = static_cast<const char*>(data);
+    unsigned long total = 0;
+
+    while (total < size) {
+        OVERLAPPED ov{};
+        ov.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        if (!ov.hEvent) return false;
+
+        DWORD w = 0;
+        BOOL ok = ::WriteFile(d_, p + total, size - total, &w, &ov);
+        if (!ok) {
+            const DWORD err = GetLastError();
+            if (err == ERROR_IO_PENDING) {
+                const DWORD wait = WaitForSingleObject(ov.hEvent, INFINITE);
+                if (wait != WAIT_OBJECT_0 || !::GetOverlappedResult(d_, &ov, &w, FALSE)) {
+                    ::CancelIoEx(d_, &ov);
+                    CloseHandle(ov.hEvent);
+                    if (written) *written = total;
+                    return false;
+                }
+            }
+            else {
+                CloseHandle(ov.hEvent);
+                if (written)
+                    *written = total;
+                return false;
+            }
+        }
+        CloseHandle(ov.hEvent);
+
+        if (w == 0) break;
+        total += w;
+    }
+
+    if (written) *written = total;
+    return total == size;
 }
+
 
 unsigned long SerialPort::read(void* buffer, unsigned long size) {
     if (!isOpen()) return 0;
     DWORD r = 0;
     if (!::ReadFile(d_, buffer, static_cast<DWORD>(size), &r, nullptr)) return 0;
     return r;
+}
+
+HANDLE SerialPort::getHandle() {
+    return d_;
 }

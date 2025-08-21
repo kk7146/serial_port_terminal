@@ -1,4 +1,4 @@
-#include "main_frame.h"
+﻿#include "main_frame.h"
 #include <wx/msgdlg.h>
 #include <map>
 #include <vector>
@@ -95,67 +95,57 @@ std::vector<wxString> EnumerateSerialPorts_Registry() {
 }
 
 mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
-    : wxFrame(parent, id, "Serial Terminal", wxDefaultPosition, wxSize(420, 450)) {
-    SetMinSize(wxSize(420, 450));
-    SetMaxSize(wxSize(420, 450));
+    : wxFrame(parent, id, "Serial Terminal", wxDefaultPosition, wxSize(700, 600)) {
+    SetMinSize(wxSize(700, 600));
+    SetMaxSize(wxSize(700, 600));
 
     auto* panel = new wxPanel(this);
 
-    // Groups
-    new wxStaticBox(panel, wxID_ANY, "Transmit data", wxPoint(16, 16), wxSize(243, 192));
-    new wxStaticBox(panel, wxID_ANY, "Received data", wxPoint(16, 224), wxSize(368, 152));
-    new wxStaticBox(panel, wxID_ANY, "Port Setup", wxPoint(264, 16), wxSize(120, 192));
+    //Transmit Macro
+    new wxStaticBox(panel, wxID_ANY, "Send Macro", wxPoint(16, 16), wxSize(120, 192));
+    macroTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(26, 36), wxSize(102, 100), wxTE_MULTILINE);
+    new wxStaticText(panel, wxID_ANY, "Timing (ms)", wxPoint(41, 138));
+    wxTextValidator validator(wxFILTER_NUMERIC);
+    timingTx_ = new wxTextCtrl(panel, wxID_ANY, "1000", wxPoint(39, 155), wxSize(76, 20), wxTE_PROCESS_ENTER, validator);
+    btnRepeat_ = new wxButton(panel, wxID_ANY, "Repeat", wxPoint(38, 180), wxSize(77, 23));
 
-	// Control buttons
-    btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(182, 176), wxSize(72, 23));
-    btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(102, 176), wxSize(72, 23));
-    btnConnect_ = new wxButton(panel, wxID_ANY, "Connect", wxPoint(280, 176), wxSize(88, 23));
-    btnRepeat_ = new wxButton(panel, wxID_ANY, "Repeat", wxPoint(22, 176), wxSize(72, 23));
-    btnRefresh_ = new wxButton(panel, wxID_ANY, "Refresh", wxPoint(280, 150), wxSize(88, 23));
-    btnClearRx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(160, 244), wxSize(72, 23));
+    // Port Setup
+    new wxStaticBox(panel, wxID_ANY, "Port Setup", wxPoint(544, 16), wxSize(120, 192));
+    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(552, 37), wxSize(104, 105));
+    btnRefresh_ = new wxButton(panel, wxID_ANY, "Refresh", wxPoint(560, 150), wxSize(88, 23));
+    btnConnect_ = new wxButton(panel, wxID_ANY, "Connect", wxPoint(560, 176), wxSize(88, 23));
 
-	// Text send receive
-    txtTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(24, 90), wxSize(224, 80), wxTE_MULTILINE);
-    txtRx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(32, 280), wxSize(336, 80), wxTE_MULTILINE | wxTE_READONLY);
+    // Transmit Data
+    new wxStaticBox(panel, wxID_ANY, "Send Data", wxPoint(140, 76), wxSize(401, 132));
+    txtTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(148, 90), wxSize(384, 80), wxTE_MULTILINE);
+    btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(450, 176), wxSize(72, 23));
+    btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(370, 176), wxSize(72, 23));
 
-    // Receive mode
-    rbChar_ = new wxRadioButton(panel, wxID_ANY, "Char", wxPoint(32, 248), wxDefaultSize, wxRB_GROUP);
-    rbHex_ = new wxRadioButton(panel, wxID_ANY, "Hex", wxPoint(104, 248));
-    rbChar_->SetValue(true);
-
-    //Listening check box
-    cbListen_ = new wxCheckBox(panel, wxID_ANY, "Listening", wxPoint(240, 248));
-    cbListen_->SetValue(true);
-
-    // Port
-    lstPorts_ = new wxListBox(panel, wxID_ANY, wxPoint(272, 37), wxSize(104, 105));
-
-    new wxStaticText(panel, wxID_ANY, "Parity Bit", wxPoint(20, 35));
-    cbParity_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(20, 55), wxSize(60, 20));
-	cbParity_->Append("none");
+	//Serial Port Settings
+	new wxStaticBox(panel, wxID_ANY, "Port Settings", wxPoint(140, 16), wxSize(401, 60));
+    new wxStaticText(panel, wxID_ANY, "Parity Bit", wxPoint(260, 25));
+    cbParity_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(260, 45), wxSize(60, 20));
+    cbParity_->Append("none");
     cbParity_->Append("even");
     cbParity_->Append("odd");
-	cbParity_->Append("mark");
-	cbParity_->Append("space");
-	cbParity_->SetValue("none");
-
-    new wxStaticText(panel, wxID_ANY, "Stop Bit", wxPoint(85, 35));
-    cbStopbit_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(85, 55), wxSize(50, 20));
-	cbStopbit_->Append("1");
-	cbStopbit_->Append("1.5");
-	cbStopbit_->Append("2");
-	cbStopbit_->SetValue("1");
-
-    new wxStaticText(panel, wxID_ANY, "Byte Size", wxPoint(140, 35));
-    cbBytesize_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(140, 55), wxSize(50, 20));
-	cbBytesize_->Append("5");
-	cbBytesize_->Append("6");
-	cbBytesize_->Append("7");
-	cbBytesize_->Append("8");
-	cbBytesize_->SetValue("8");
-
-    new wxStaticText(panel, wxID_ANY, "Baud Rate", wxPoint(195, 35));
-    cbBaud_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(195, 55), wxSize(60, 20));
+    cbParity_->Append("mark");
+    cbParity_->Append("space");
+    cbParity_->SetValue("none");
+    new wxStaticText(panel, wxID_ANY, "Stop Bit", wxPoint(330, 25));
+    cbStopbit_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(330, 45), wxSize(50, 20));
+    cbStopbit_->Append("1");
+    cbStopbit_->Append("1.5");
+    cbStopbit_->Append("2");
+    cbStopbit_->SetValue("1");
+    new wxStaticText(panel, wxID_ANY, "Byte Size", wxPoint(390, 25));
+    cbBytesize_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(390, 45), wxSize(50, 20));
+    cbBytesize_->Append("5");
+    cbBytesize_->Append("6");
+    cbBytesize_->Append("7");
+    cbBytesize_->Append("8");
+    cbBytesize_->SetValue("8");
+    new wxStaticText(panel, wxID_ANY, "Baud Rate", wxPoint(450, 25));
+    cbBaud_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(450, 45), wxSize(70, 20));
     cbBaud_->Append("600");
     cbBaud_->Append("1200");
     cbBaud_->Append("4800");
@@ -165,14 +155,20 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     cbBaud_->Append("57600");
     cbBaud_->Append("115200");
     cbBaud_->Append("128000");
-	cbBaud_->Append("256000");
+    cbBaud_->Append("256000");
     cbBaud_->SetValue("9600");
 
-    CreateStatusBar(1);
+    // Received Data
+    new wxStaticBox(panel, wxID_ANY, "Received Data", wxPoint(16, 224), wxSize(648, 302));
+    txtRx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(32, 280), wxSize(616, 230), wxTE_MULTILINE | wxTE_READONLY);
+    btnClearRx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(160, 244), wxSize(72, 23));
+    rbChar_ = new wxRadioButton(panel, wxID_ANY, "Char", wxPoint(32, 248), wxDefaultSize, wxRB_GROUP);
+    rbHex_ = new wxRadioButton(panel, wxID_ANY, "Hex", wxPoint(104, 248));
+    rbChar_->SetValue(true);
+    cbListen_ = new wxCheckBox(panel, wxID_ANY, "Listening", wxPoint(240, 248));
+    cbListen_->SetValue(true);
 
-    // Timer
-    timer_.SetOwner(this);
-    timer_.Start(100, wxTIMER_CONTINUOUS);
+    CreateStatusBar(1);
     
     // Repeat Timer
     repeatTimer_.SetOwner(this);
@@ -187,14 +183,49 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     rbChar_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeChar, this);
     rbHex_->Bind(wxEVT_RADIOBUTTON, &mainFrame::OnModeHex, this);
     Bind(wxEVT_COMBOBOX, &mainFrame::OnChange, this); // When all combo boxes are changed, this event will be called.
-    Bind(wxEVT_TIMER, &mainFrame::OnTimer, this, timer_.GetId());
     Bind(wxEVT_TIMER, &mainFrame::OnRepeatTimer, this, repeatTimer_.GetId());
     Bind(wxEVT_CLOSE_WINDOW, &mainFrame::OnClose, this);
+
+    Bind(EVT_RX_DATA, [this](wxThreadEvent& e) {
+        rxAccum_ += std::string(e.GetString().ToUTF8());
+        if (!cbListen_->IsChecked())
+			rxAccum_.clear();
+        if (uiFlushClock_.Time() >= kUiFlushMs) {
+            uiFlushClock_.Start();
+            if (!rxAccum_.empty()) {
+                if (mode_ == Mode::Char) {
+                    txtRx_->AppendText(wxString::FromUTF8(rxAccum_));
+                }
+                else {
+                    wxString line;
+                    line.reserve(rxAccum_.size() * 5);
+                    for (unsigned char c : rxAccum_) {
+                        line.Append(wxString::Format("0x%02X", c));
+                    }
+                    line.Append(" ");
+                    txtRx_->AppendText(line);
+                }
+                rxAccum_.clear();
+                static const long kMax = 200000;
+                if (txtRx_->GetLastPosition() > kMax) {
+                    txtRx_->Remove(0, txtRx_->GetLastPosition() - kMax);
+                }
+            }
+        }
+        });
 
     Centre();
 }
 
 void mainFrame::OnClose(wxCloseEvent& e) {
+    rxRunning_ = false;
+    if (port_.isOpen()) {
+        HANDLE h = port_.getHandle();
+        SetCommMask(h, 0);
+        CancelIoEx(h, nullptr);
+    }
+    if (rxThread_.joinable())
+        rxThread_.join();
     port_.close();
     e.Skip();
 }
@@ -251,11 +282,73 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
             return;
         }
 
+        rxRunning_ = true;
+        rxThread_ = std::thread([this] {
+            OVERLAPPED ovWait{};
+            ovWait.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+
+            OVERLAPPED ovRead{};
+            ovRead.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+
+            DWORD mask = 0;
+            std::vector<char> buf(4096);
+
+            while (rxRunning_) {
+                ResetEvent(ovWait.hEvent);
+                if (!WaitCommEvent(port_.getHandle(), &mask, &ovWait)) {
+                    if (GetLastError() != ERROR_IO_PENDING) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                        continue;
+                    }
+                    WaitForSingleObject(ovWait.hEvent, INFINITE);
+                }
+
+                if ((mask & EV_RXCHAR) == 0) continue;
+
+                for (;;) {
+                    ResetEvent(ovRead.hEvent);
+                    DWORD bytesRead = 0;
+                    BOOL ok = ReadFile(port_.getHandle(), buf.data(), (DWORD)buf.size(),
+                        &bytesRead, &ovRead);
+                    if (!ok) {
+                        if (GetLastError() == ERROR_IO_PENDING) {
+                            WaitForSingleObject(ovRead.hEvent, INFINITE);
+                            GetOverlappedResult(port_.getHandle(), &ovRead, &bytesRead, FALSE);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    if (bytesRead == 0) break;
+
+                    auto* ev = new wxThreadEvent(EVT_RX_DATA);
+                    ev->SetString(wxString::FromUTF8(std::string(buf.data(), bytesRead)));
+                    wxQueueEvent(this, ev);
+
+                    if (bytesRead < buf.size()) break;
+                }
+            }
+
+            CloseHandle(ovWait.hEvent);
+            CloseHandle(ovRead.hEvent);
+            });
+
+
         btnConnect_->SetLabel("Disconnect");
-        SetStatusText(wxString::Format("Connected: %s @ %lu", portName, baudRate));
+        SetStatusText(wxString::Format("Connected"));
     }
     else {
+        rxRunning_ = false;
+
+        if (port_.isOpen()) {
+            HANDLE h = port_.getHandle();
+            SetCommMask(h, 0);
+            CancelIoEx(h, nullptr);
+        }
+        if (rxThread_.joinable())
+            rxThread_.join();
         port_.close();
+		timingTx_->Enable(true); // Enable timing input when disconnected.
         btnConnect_->SetLabel("Connect");
         SetStatusText("");
     }
@@ -266,15 +359,25 @@ void mainFrame::OnRepeatToggle(wxCommandEvent&) {
         wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
         return;
     }
+
+    unsigned long intervalMs = 0;
+    if (!timingTx_->GetValue().ToULong(&intervalMs) || intervalMs < 10 || intervalMs > 60000) {
+        wxMessageBox("Enter a valid period in ms (10 ~ 60000).", "Warning", wxICON_WARNING, this);
+        return;
+    }
+
     if (!isRepeating_) {
-        btnRepeat_->SetLabel("Stop");
-        repeatTimer_.Start(repeatIntervalMs_);
+        repeatTimer_.Start(static_cast<int>(intervalMs), wxTIMER_CONTINUOUS);
         isRepeating_ = true;
+        btnRepeat_->SetLabel("Stop");
+        timingTx_->Enable(false);
     }
     else {
-        btnRepeat_->SetLabel("Repeat");
         repeatTimer_.Stop();
         isRepeating_ = false;
+        btnRepeat_->SetLabel("Repeat");
+        timingTx_->Enable(true);
+        SetStatusText("");
     }
 }
 
@@ -304,26 +407,7 @@ void mainFrame::OnSend(wxCommandEvent&) {
     unsigned long written = 0;
     if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
         wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
-}
-
-void mainFrame::OnTimer(wxTimerEvent&) {
-    if (!cbListen_->IsChecked() || !port_.isOpen()) return;
-
-    char buf[256];
-    const unsigned long r = port_.read(buf, sizeof(buf));
-    if (r == 0) return;
-
-    if (mode_ == Mode::Char) {
-        wxString s = wxString::FromUTF8(buf, r);
-        if (!s.empty()) txtRx_->AppendText(s);
-    }
-    else {
-        wxString line;
-        line.reserve(r * 5);
-        for (unsigned long i = 0; i < r; ++i)
-            line.Append(wxString::Format("0x%02X ", static_cast<unsigned char>(buf[i])));
-        txtRx_->AppendText(line);
-    }
+    txtTx_->Clear();
 }
 
 void mainFrame::OnRepeatTimer(wxTimerEvent&) {
@@ -336,7 +420,7 @@ void mainFrame::OnRepeatTimer(wxTimerEvent&) {
         wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
         return;
     }
-    const wxString text = txtTx_->GetValue();
+    const wxString text = macroTx_->GetValue();
     if (text.empty()) return;
     const std::string utf8 = std::string(text.ToUTF8());
     unsigned long written = 0;
@@ -384,9 +468,12 @@ void mainFrame::OnChange(wxCommandEvent&) {
     cfg.dtr = true;
     cfg.rts = true;
     port_.changeConfig(cfg);
+    SetStatusText(wxString::Format("Connected"));
 }
 
 void mainFrame::OnModeChar(wxCommandEvent&) { mode_ = Mode::Char; }
 void mainFrame::OnModeHex(wxCommandEvent&) { mode_ = Mode::Hex; }
 void mainFrame::OnClearTx(wxCommandEvent&) { txtTx_->Clear(); }
 void mainFrame::OnClearRx(wxCommandEvent&) { txtRx_->Clear(); }
+
+wxDEFINE_EVENT(EVT_RX_DATA, wxThreadEvent);

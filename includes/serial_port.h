@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SERIAL_PORT_H
+#define SERIAL_PORT_H
 
 #include <wx/string.h>
 #include <memory>
@@ -23,8 +24,9 @@ public:
 
     bool open(const wxString& port, const SerialConfig& cfg);
     void close();
-    bool isOpen() const;
+    bool isOpen();
     bool changeConfig(const SerialConfig& cfg);
+    HANDLE getHandle();
 
     bool write(const void* data, unsigned long size, unsigned long* written = nullptr);
     unsigned long read(void* buffer, unsigned long size);
@@ -32,3 +34,5 @@ public:
 private:
     HANDLE d_;
 };
+
+#endif
