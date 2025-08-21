@@ -117,7 +117,8 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
 
     // Transmit Data
     new wxStaticBox(panel, wxID_ANY, "Send Data", wxPoint(140, 76), wxSize(401, 132));
-    txtTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(148, 90), wxSize(384, 80), wxTE_MULTILINE);
+    txtTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(148, 90), wxSize(384, 80), wxTE_MULTILINE | wxTE_PROCESS_ENTER);
+    cbCrlf_ = new wxCheckBox(panel, wxID_ANY, "CRLF", wxPoint(150, 176));
     btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(450, 176), wxSize(72, 23));
     btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(370, 176), wxSize(72, 23));
 
@@ -200,7 +201,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
                     wxString line;
                     line.reserve(rxAccum_.size() * 5);
                     for (unsigned char c : rxAccum_) {
-                        line.Append(wxString::Format("0x%02X", c));
+                        line.Append(wxString::Format("0x%02X ", c));
                     }
                     line.Append(" ");
                     txtRx_->AppendText(line);
@@ -213,6 +214,67 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
             }
         }
         });
+
+    Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent&) {
+        if (!port_.isOpen()) {
+            wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
+            return;
+        }
+        const wxString text = txtTx_->GetValue();
+        if (text.empty()) return;
+        const std::string utf8 = std::string(text.ToUTF8());
+        unsigned long written = 0;
+        if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
+            wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
+        if (cbCrlf_->IsChecked()) {
+            const char crlf[] = "\n";
+            port_.write(crlf, 1, &written);
+		}
+        txtTx_->Clear();
+        });
+
+    txtTx_->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& e) {
+        if (e.ControlDown()) {
+            switch (e.GetKeyCode()) {
+                case 'B': {
+                    if (port_.isOpen()) {
+                        unsigned long written = 0;
+                        const char ctrlKey = 0x02;
+                        port_.write(&ctrlKey, 1, &written);
+                    }
+                    return;
+                }
+                case 'C': {
+                    if (port_.isOpen()) {
+                        unsigned long written = 0;
+                        const char ctrlKey = 0x03;
+                        port_.write(&ctrlKey, 1, &written);
+                    }
+                    return;
+                }
+                case 'D': {
+                    if (port_.isOpen()) {
+                        unsigned long written = 0;
+                        const char ctrlKey = 0x04;
+                        port_.write(&ctrlKey, 1, &written);
+                    }
+                    return;
+                }
+            }
+        }
+        e.Skip();
+        });
+
+    lstPorts_->Freeze();
+    lstPorts_->Clear();
+    auto ports = EnumerateSerialPorts_Registry();
+    // Uncomment the following code if you want to use SetupAPI for enumerating serial ports.
+    // if (ports.empty()) {
+    //     ports = EnumerateSerialPorts_SetupAPI();
+    // }
+    for (auto& p : ports) lstPorts_->Append(p);
+    lstPorts_->Thaw();
+    if (!ports.empty()) lstPorts_->SetSelection(0);
 
     Centre();
 }
@@ -407,6 +469,10 @@ void mainFrame::OnSend(wxCommandEvent&) {
     unsigned long written = 0;
     if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
         wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
+    if (cbCrlf_->IsChecked()) {
+        const char crlf[] = "\n";
+        port_.write(crlf, 1, &written);
+    }
     txtTx_->Clear();
 }
 
