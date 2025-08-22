@@ -20,3 +20,5 @@ nmake /f makefile.vc BUILD=release SHARED=0 MONOLITHIC=0 TARGET_CPU=amd64
 # 할 일
 - [ ] OnRefresh 함수화
 - [ ] Cntl + 키 이벤트 추가 (현재 B C D)
+- [ ] 터미널 제어 문자 기능
+- [ ] frame 쪽에서 getHandle() 호출 손보기

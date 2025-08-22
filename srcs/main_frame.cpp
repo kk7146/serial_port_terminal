@@ -141,7 +141,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     cbStopbit_->Append("1.5");
     cbStopbit_->Append("2");
     cbStopbit_->SetValue("1");
-    new wxStaticText(panel, wxID_ANY, "Byte Size", wxPoint(390, 25));
+    new wxStaticText(panel, wxID_ANY, "Bit Size", wxPoint(390, 25));
     cbBytesize_ = new wxComboBox(panel, wxID_ANY, "", wxPoint(390, 45), wxSize(50, 20));
     cbBytesize_->Append("5");
     cbBytesize_->Append("6");
