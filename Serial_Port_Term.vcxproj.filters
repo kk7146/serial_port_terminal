@@ -38,8 +38,5 @@
     <ClInclude Include="includes\serial_port.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

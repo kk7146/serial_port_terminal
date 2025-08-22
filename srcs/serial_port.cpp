@@ -135,7 +135,6 @@ bool SerialPort::write(const void* data, unsigned long size, unsigned long* writ
     return total == size;
 }
 
-
 unsigned long SerialPort::read(void* buffer, unsigned long size) {
     if (!isOpen()) return 0;
     DWORD r = 0;

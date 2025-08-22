@@ -39,6 +39,7 @@ private:
     wxRadioButton* rbHex_{ nullptr };
     wxCheckBox* cbListen_{ nullptr };
     wxCheckBox* cbCrlf_{ nullptr };
+    wxCheckBox* macroCrlf_{ nullptr };
     wxListBox* lstPorts_{ nullptr };
     wxComboBox* cbBaud_{ nullptr };
     wxButton* btnSend_{ nullptr };

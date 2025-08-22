@@ -103,7 +103,9 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
 
     //Transmit Macro
     new wxStaticBox(panel, wxID_ANY, "Send Macro", wxPoint(16, 16), wxSize(120, 192));
-    macroTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(26, 36), wxSize(102, 100), wxTE_MULTILINE);
+    macroTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(26, 36), wxSize(102, 80), wxTE_MULTILINE);
+    macroCrlf_ = new wxCheckBox(panel, wxID_ANY, "CRLF", wxPoint(41, 120));
+    macroCrlf_->SetValue(true);
     new wxStaticText(panel, wxID_ANY, "Timing (ms)", wxPoint(41, 138));
     wxTextValidator validator(wxFILTER_NUMERIC);
     timingTx_ = new wxTextCtrl(panel, wxID_ANY, "1000", wxPoint(39, 155), wxSize(76, 20), wxTE_PROCESS_ENTER, validator);
@@ -119,6 +121,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     new wxStaticBox(panel, wxID_ANY, "Send Data", wxPoint(140, 76), wxSize(401, 132));
     txtTx_ = new wxTextCtrl(panel, wxID_ANY, "", wxPoint(148, 90), wxSize(384, 80), wxTE_MULTILINE | wxTE_PROCESS_ENTER);
     cbCrlf_ = new wxCheckBox(panel, wxID_ANY, "CRLF", wxPoint(150, 176));
+    cbCrlf_->SetValue(true);
     btnSend_ = new wxButton(panel, wxID_ANY, "Send", wxPoint(450, 176), wxSize(72, 23));
     btnClearTx_ = new wxButton(panel, wxID_ANY, "Clear", wxPoint(370, 176), wxSize(72, 23));
 
@@ -157,7 +160,7 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     cbBaud_->Append("115200");
     cbBaud_->Append("128000");
     cbBaud_->Append("256000");
-    cbBaud_->SetValue("9600");
+    cbBaud_->SetValue("115200");
 
     // Received Data
     new wxStaticBox(panel, wxID_ANY, "Received Data", wxPoint(16, 224), wxSize(648, 302));
@@ -186,7 +189,6 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
     Bind(wxEVT_COMBOBOX, &mainFrame::OnChange, this); // When all combo boxes are changed, this event will be called.
     Bind(wxEVT_TIMER, &mainFrame::OnRepeatTimer, this, repeatTimer_.GetId());
     Bind(wxEVT_CLOSE_WINDOW, &mainFrame::OnClose, this);
-
     Bind(EVT_RX_DATA, [this](wxThreadEvent& e) {
         rxAccum_ += std::string(e.GetString().ToUTF8());
         if (!cbListen_->IsChecked())
@@ -194,16 +196,15 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
         if (uiFlushClock_.Time() >= kUiFlushMs) {
             uiFlushClock_.Start();
             if (!rxAccum_.empty()) {
-                if (mode_ == Mode::Char) {
-                    txtRx_->AppendText(wxString::FromUTF8(rxAccum_));
-                }
+                if (mode_ == Mode::Char)
+                    txtRx_->AppendText(wxString::FromUTF8(rxAccum_)); 
                 else {
                     wxString line;
                     line.reserve(rxAccum_.size() * 5);
                     for (unsigned char c : rxAccum_) {
                         line.Append(wxString::Format("0x%02X ", c));
                     }
-                    line.Append(" ");
+                    line.Append("\n");
                     txtRx_->AppendText(line);
                 }
                 rxAccum_.clear();
@@ -214,7 +215,6 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
             }
         }
         });
-
     Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent&) {
         if (!port_.isOpen()) {
             wxMessageBox("Connect to port first.", "Error", wxICON_ERROR, this);
@@ -232,7 +232,6 @@ mainFrame::mainFrame(wxWindow* parent, wxWindowID id)
 		}
         txtTx_->Clear();
         });
-
     txtTx_->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& e) {
         if (e.ControlDown()) {
             switch (e.GetKeyCode()) {
@@ -367,12 +366,11 @@ void mainFrame::OnConnectToggle(wxCommandEvent&) {
 
                 if ((mask & EV_RXCHAR) == 0) continue;
 
-                for (;;) {
+                while (true) {
                     ResetEvent(ovRead.hEvent);
                     DWORD bytesRead = 0;
-                    BOOL ok = ReadFile(port_.getHandle(), buf.data(), (DWORD)buf.size(),
-                        &bytesRead, &ovRead);
-                    if (!ok) {
+                    BOOL result = ReadFile(port_.getHandle(), buf.data(), (DWORD)buf.size(), &bytesRead, &ovRead);
+                    if (!result) {
                         if (GetLastError() == ERROR_IO_PENDING) {
                             WaitForSingleObject(ovRead.hEvent, INFINITE);
                             GetOverlappedResult(port_.getHandle(), &ovRead, &bytesRead, FALSE);
@@ -492,6 +490,10 @@ void mainFrame::OnRepeatTimer(wxTimerEvent&) {
     unsigned long written = 0;
     if (!port_.write(utf8.data(), static_cast<unsigned long>(utf8.size()), &written))
         wxMessageBox("Write failed.", "Error", wxICON_ERROR, this);
+    if (macroCrlf_->IsChecked()) {
+        const char crlf[] = "\n";
+        port_.write(crlf, 1, &written);
+    }
 }
 
 void mainFrame::OnChange(wxCommandEvent&) {
