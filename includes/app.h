@@ -1,5 +1,5 @@
-﻿#ifndef SERIAL_APP_H
-#define SERIAL_APP_H
+﻿#ifndef APP_H
+#define APP_H
 
 #include <wx/app.h>
 
