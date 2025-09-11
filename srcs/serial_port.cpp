@@ -29,7 +29,7 @@ static BYTE MapParity(uint8_t p) {
 }
 
 SerialPort::SerialPort() {
-    SerialPort::d_ = INVALID_HANDLE_VALUE;
+    d_ = INVALID_HANDLE_VALUE;
 }
 
 SerialPort::~SerialPort() { close(); }
@@ -62,18 +62,21 @@ bool SerialPort::open(const wxString& port, const SerialConfig& cfg) {
 
     wxString device = wxString::Format("\\\\.\\%s", port);
     d_ = ::CreateFileW(device.wc_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
-    if (d_ == INVALID_HANDLE_VALUE) return false;
+    if (d_ == INVALID_HANDLE_VALUE)
+        return false;
 
 	if (!changeConfig(cfg))
         return false;
-
     COMMTIMEOUTS to{};
     to.ReadIntervalTimeout = 100;   // ms
     to.ReadTotalTimeoutConstant = 100;   // ms
     to.ReadTotalTimeoutMultiplier = 1;   // ms/byte
     to.WriteTotalTimeoutConstant = 100;   // ms
     to.WriteTotalTimeoutMultiplier = 1;   // ms/byte
-    if (!::SetCommTimeouts(d_, &to)) { ::CloseHandle(d_); return false; }
+    if (!::SetCommTimeouts(d_, &to)) {
+        ::CloseHandle(d_);
+        return false;
+    }
     ::SetupComm(d_, 4096, 4096);
     ::PurgeComm(d_, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
     ::SetCommMask(d_, EV_RXCHAR | EV_ERR);
@@ -103,7 +106,8 @@ bool SerialPort::write(const void* data, unsigned long size, unsigned long* writ
     while (total < size) {
         OVERLAPPED ov{};
         ov.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-        if (!ov.hEvent) return false;
+        if (!ov.hEvent)
+            return false;
 
         DWORD w = 0;
         BOOL ok = ::WriteFile(d_, p + total, size - total, &w, &ov);
@@ -136,9 +140,11 @@ bool SerialPort::write(const void* data, unsigned long size, unsigned long* writ
 }
 
 unsigned long SerialPort::read(void* buffer, unsigned long size) {
-    if (!isOpen()) return 0;
+    if (!isOpen())
+        return 0;
     DWORD r = 0;
-    if (!::ReadFile(d_, buffer, static_cast<DWORD>(size), &r, nullptr)) return 0;
+    if (!::ReadFile(d_, buffer, static_cast<DWORD>(size), &r, nullptr))
+        return 0;
     return r;
 }
 
