@@ -3,9 +3,11 @@
 
 #include <wx/app.h>
 
-class serialApp : public wxApp {
+class MyApp : public wxApp {
 public:
-    virtual bool OnInit();
+    bool OnInit() override;
 };
+
+wxDECLARE_APP(MyApp);
 
 #endif
