@@ -5,11 +5,13 @@ VisualStudioVersion = 17.14.36401.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serial_Port_Term", "Serial_Port_Term.vcxproj", "{36A2A773-80B9-4E2A-9508-89519058DD71}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "USB_Camera", "..\USB_Camera\USB_Camera.vcxproj", "{8693A8E5-B86B-428D-8ED0-ABD485A16062}"
-EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup_USB_Camera", "..\Setup_USB_Camera\Setup_USB_Camera.vdproj", "{AC38849C-4D48-B694-C93A-100A1F06A01F}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup_Serial_Port", "..\Setup_Serial_Port\Setup_Serial_Port.vdproj", "{CB8E1F72-9D99-761A-C5D3-514B6CEFF669}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "USB_Camera", "..\USB_camera_Windows\USB_Camera.vcxproj", "{8693A8E5-B86B-428D-8ED0-ABD485A16062}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SUSI_App", "..\SUSI_App\SUSI_App.vcxproj", "{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,13 +29,6 @@ Global
 		{36A2A773-80B9-4E2A-9508-89519058DD71}.Release|x64.Build.0 = Release|x64
 		{36A2A773-80B9-4E2A-9508-89519058DD71}.Release|x86.ActiveCfg = Release|Win32
 		{36A2A773-80B9-4E2A-9508-89519058DD71}.Release|x86.Build.0 = Release|Win32
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x64.ActiveCfg = Debug|x64
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x64.Build.0 = Debug|x64
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x86.ActiveCfg = Debug|Win32
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x86.Build.0 = Debug|Win32
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x64.ActiveCfg = Release|x64
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x86.ActiveCfg = Release|Win32
-		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x86.Build.0 = Release|Win32
 		{AC38849C-4D48-B694-C93A-100A1F06A01F}.Debug|x64.ActiveCfg = Debug
 		{AC38849C-4D48-B694-C93A-100A1F06A01F}.Debug|x86.ActiveCfg = Debug
 		{AC38849C-4D48-B694-C93A-100A1F06A01F}.Release|x64.ActiveCfg = Release
@@ -42,6 +37,22 @@ Global
 		{CB8E1F72-9D99-761A-C5D3-514B6CEFF669}.Debug|x86.ActiveCfg = Debug
 		{CB8E1F72-9D99-761A-C5D3-514B6CEFF669}.Release|x64.ActiveCfg = Release
 		{CB8E1F72-9D99-761A-C5D3-514B6CEFF669}.Release|x86.ActiveCfg = Release
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x64.ActiveCfg = Debug|x64
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x64.Build.0 = Debug|x64
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x86.ActiveCfg = Debug|Win32
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Debug|x86.Build.0 = Debug|Win32
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x64.ActiveCfg = Release|x64
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x64.Build.0 = Release|x64
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x86.ActiveCfg = Release|Win32
+		{8693A8E5-B86B-428D-8ED0-ABD485A16062}.Release|x86.Build.0 = Release|Win32
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Debug|x64.ActiveCfg = Debug|x64
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Debug|x64.Build.0 = Debug|x64
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Debug|x86.ActiveCfg = Debug|Win32
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Debug|x86.Build.0 = Debug|Win32
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Release|x64.ActiveCfg = Release|x64
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Release|x64.Build.0 = Release|x64
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Release|x86.ActiveCfg = Release|Win32
+		{15CF1266-CF7C-4C0E-98A4-0B3D0029F149}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

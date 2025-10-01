@@ -59,7 +59,6 @@ bool SerialPort::changeConfig(const SerialConfig& cfg) {
 
 bool SerialPort::open(const wxString& port, const SerialConfig& cfg) {
     close();
-
     wxString device = wxString::Format("\\\\.\\%s", port);
     d_ = ::CreateFileW(device.wc_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
     if (d_ == INVALID_HANDLE_VALUE)
